@@ -1,0 +1,11 @@
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #EEABCE;
+  box-sizing: border-box;
+}
