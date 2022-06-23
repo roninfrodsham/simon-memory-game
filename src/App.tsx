@@ -1,21 +1,21 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
-import { GameButton } from './components/gameButton';
-import { StartButton } from './components/startButton';
-import { getRandomInt, timeout, postData } from "./utils/misc";
+import { GameButton } from './components/gameButton'
+import { StartButton } from './components/startButton'
+import { getRandomInt, timeout, postData } from "./utils/misc"
 import logo from './logo.svg'
 import './App.css'
-import greenMp3 from "./sounds/green.mp3";
-import redMp3 from "./sounds/red.mp3";
-import yellowMp3 from "./sounds/yellow.mp3";
-import blueMp3 from "./sounds/blue.mp3";
-import errorMp3 from "./sounds/error.mp3";
+import greenMp3 from "./sounds/green.mp3"
+import redMp3 from "./sounds/red.mp3"
+import yellowMp3 from "./sounds/yellow.mp3"
+import blueMp3 from "./sounds/blue.mp3"
+import errorMp3 from "./sounds/error.mp3"
 
 // switch these to use an oscillator!!!!
-const greenSound = new Audio(greenMp3);
-const redSound = new Audio(redMp3);
-const yellowSound = new Audio(yellowMp3);
-const blueSound = new Audio(blueMp3);
-const errorSound = new Audio(errorMp3);
+const greenSound = new Audio(greenMp3)
+const redSound = new Audio(redMp3)
+const yellowSound = new Audio(yellowMp3)
+const blueSound = new Audio(blueMp3)
+const errorSound = new Audio(errorMp3)
 
 type GameStateProps = {
   simonMode: boolean,
@@ -28,7 +28,7 @@ type GameStateProps = {
 }
 
 function App() {
-  const colours: Array<string> = ["green", "red", "yellow", "blue"];
+  const colours: Array<string> = ["green", "red", "yellow", "blue"]
   const initialGameState: GameStateProps = {
     simonMode: false,
     colours: [],
@@ -37,122 +37,122 @@ function App() {
     audioPlayback: 2,
     userPlay: false,
     userColours: [],
-  };
+  }
 
-  const [activeGame, setActiveGame] = useState(false);
-  const [gameState, setGameState] = useState(initialGameState);
-  const [currentColour, setCurrentColour] = useState("");
+  const [activeGame, setActiveGame] = useState(false)
+  const [gameState, setGameState] = useState(initialGameState)
+  const [currentColour, setCurrentColour] = useState("")
 
   function startGame() {
-    setActiveGame(true);
+    setActiveGame(true)
   }
 
   useLayoutEffect(() => {
     window.addEventListener("contextmenu", function (e) {
-      e.preventDefault();
-    });
-  }, []);
+      e.preventDefault()
+    })
+  }, [])
 
   useEffect(() => {
     if (activeGame) {
-      setGameState({ ...initialGameState, simonMode: true });
+      setGameState({ ...initialGameState, simonMode: true })
     } else {
-      setGameState(initialGameState);
+      setGameState(initialGameState)
     }
-  }, [activeGame]);
+  }, [activeGame])
 
   useEffect(() => {
     if (activeGame && gameState.simonMode) {
-      let randomColour = colours[getRandomInt(4)];
-      const coloursCopy = [...gameState.colours];
-      coloursCopy.push(randomColour);
-      setGameState({ ...gameState, colours: coloursCopy });
+      let randomColour = colours[getRandomInt(4)]
+      const coloursCopy = [...gameState.colours]
+      coloursCopy.push(randomColour)
+      setGameState({ ...gameState, colours: coloursCopy })
     }
-  }, [activeGame, gameState.simonMode]);
+  }, [activeGame, gameState.simonMode])
 
   useEffect(() => {
     if (activeGame && gameState.simonMode && gameState.colours.length) {
-      lightUpColours();
+      lightUpColours()
     }
-  }, [activeGame, gameState.simonMode, gameState.colours.length]);
+  }, [activeGame, gameState.simonMode, gameState.colours.length])
 
   async function lightUpColours() {
-    await timeout(1000);
-    for (let index = 0; index < gameState.colours.length; index++) {
-      setCurrentColour(gameState.colours[index]);
-      playSound(gameState.colours[index]);
-      await timeout(gameState.speed);
-      setCurrentColour("");
-      await timeout(gameState.speed);
+    await timeout(1000)
+    for (let index = 0 index < gameState.colours.length index++) {
+      setCurrentColour(gameState.colours[index])
+      playSound(gameState.colours[index])
+      await timeout(gameState.speed)
+      setCurrentColour("")
+      await timeout(gameState.speed)
     }
-    const newGameSpeed = gameState.speed - 100 < 200 ? 200 : gameState.speed - 100;
+    const newGameSpeed = gameState.speed - 100 < 200 ? 200 : gameState.speed - 100
     setGameState({
       ...gameState,
       simonMode: false,
       userPlay: true,
       userColours: [...gameState.colours],
       speed: newGameSpeed,
-    });
+    })
   }
 
   async function gameButtonClickHandle(selectedColour: string) {
     if (!gameState.simonMode && gameState.userPlay) {
-      const userColoursCopy = [...gameState.userColours];
-      const colour = userColoursCopy.shift();
-      setCurrentColour(selectedColour);
-      playSound(selectedColour);
+      const userColoursCopy = [...gameState.userColours]
+      const colour = userColoursCopy.shift()
+      setCurrentColour(selectedColour)
+      playSound(selectedColour)
 
       if (selectedColour === colour) {
         if (userColoursCopy.length) {
-          console.log("SHOW NEXT COLOUR");
-          setGameState({ ...gameState, userColours: userColoursCopy });
+          console.log("SHOW NEXT COLOUR")
+          setGameState({ ...gameState, userColours: userColoursCopy })
         } else {
-          await timeout(200);
-          setCurrentColour("");
+          await timeout(200)
+          setCurrentColour("")
           setGameState({
             ...gameState,
             simonMode: true,
             userPlay: false,
             score: gameState.colours.length,
             userColours: [],
-          });
-          console.log("ALL CORRECT SWITCH TO SIMON");
+          })
+          console.log("ALL CORRECT SWITCH TO SIMON")
         }
       } else {
-        console.log("FAIL");
-        errorSound.play();
-        await timeout(500);
+        console.log("FAIL")
+        errorSound.play()
+        await timeout(500)
         setGameState({
           ...initialGameState,
           simonMode: false,
           userPlay: false,
           userColours: [],
-        });
-        setActiveGame(false);
+        })
+        setActiveGame(false)
       }
-      await timeout(200);
-      setCurrentColour("");
+      await timeout(200)
+      setCurrentColour("")
     }
   }
 
   function playSound(selectedColour: string) {
     switch (selectedColour) {
       case "green":
-        greenSound.playbackRate = gameState.audioPlayback;
-        greenSound.play();
-        break;
+        greenSound.playbackRate = gameState.audioPlayback
+        greenSound.play()
+        break
       case "red":
-        redSound.playbackRate = gameState.audioPlayback;
-        redSound.play();
-        break;
+        redSound.playbackRate = gameState.audioPlayback
+        redSound.play()
+        break
       case "yellow":
-        yellowSound.playbackRate = gameState.audioPlayback;
-        yellowSound.play();
-        break;
+        yellowSound.playbackRate = gameState.audioPlayback
+        yellowSound.play()
+        break
       case "blue":
-        blueSound.playbackRate = gameState.audioPlayback;
-        blueSound.play();
-        break;
+        blueSound.playbackRate = gameState.audioPlayback
+        blueSound.play()
+        break
     }
   }
 
@@ -197,7 +197,7 @@ function App() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export default App

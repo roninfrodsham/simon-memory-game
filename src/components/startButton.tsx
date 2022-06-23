@@ -1,4 +1,6 @@
-function StartButton({ onClick, activeGame }: {onClick: () => void, activeGame: boolean}) {
+import { ReactElement } from "react"
+
+function StartButton({ onClick, activeGame }: {onClick: () => void, activeGame: boolean}):ReactElement {
   return (
     <div className="startContainer cc">
       <div className="startButtonShadow cc circle">
@@ -8,7 +10,7 @@ function StartButton({ onClick, activeGame }: {onClick: () => void, activeGame: 
         ></div>
       </div>
     </div>
-  );
+  )
 }
 
 export { StartButton };
