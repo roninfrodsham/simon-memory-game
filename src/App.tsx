@@ -39,9 +39,9 @@ function App() {
     userColours: [],
   }
 
-  const [activeGame, setActiveGame] = useState(false)
-  const [gameState, setGameState] = useState(initialGameState)
-  const [currentColour, setCurrentColour] = useState("")
+  const [activeGame, setActiveGame] = useState<boolean>(false)
+  const [gameState, setGameState] = useState<GameStateProps>(initialGameState)
+  const [currentColour, setCurrentColour] = useState<string | null>(null)
 
   function startGame() {
     setActiveGame(true)
@@ -78,7 +78,7 @@ function App() {
 
   async function lightUpColours() {
     await timeout(1000)
-    for (let index = 0 index < gameState.colours.length index++) {
+    for (let index = 0; index < gameState.colours.length; index++) {
       setCurrentColour(gameState.colours[index])
       playSound(gameState.colours[index])
       await timeout(gameState.speed)
