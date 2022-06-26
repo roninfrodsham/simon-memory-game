@@ -119,7 +119,6 @@ function App() {
           console.log("ALL CORRECT SWITCH TO SIMON")
         }
       } else {
-        console.log("FAIL")
         errorSound.play()
         await timeout(500)
         setGameState({
