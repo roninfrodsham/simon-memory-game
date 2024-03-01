@@ -1,7 +1,6 @@
-import { useState, useEffect, useLayoutEffect } from "react";
-import { GameButton } from "./components/gameButton";
-import { StartButton } from "./components/startButton";
-import { getRandomInt, timeout, postData } from "./utils/misc";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import { GameButton, StartButton } from "./components";
+import { getRandomInt, timeout } from "./utils/misc";
 import { Colour } from "./types";
 import logo from "./logo.svg";
 import "./App.css";
@@ -10,6 +9,15 @@ import redMp3 from "./sounds/red.mp3";
 import yellowMp3 from "./sounds/yellow.mp3";
 import blueMp3 from "./sounds/blue.mp3";
 import errorMp3 from "./sounds/error.mp3";
+
+const COLOURS_COUNT = 4;
+const INITIAL_SPEED = 800;
+const SPEED_DECREMENT = 100;
+const MIN_SPEED = 200;
+const AUDIO_PLAYBACK = 2;
+const TIMEOUT_DURATION = 200;
+const LIGHT_UP_DELAY = 1000;
+const ERROR_DELAY = 500;
 
 // switch these to use an oscillator!!!!
 const greenSound = new Audio(greenMp3);
@@ -25,7 +33,7 @@ type GameStateProps = {
   speed: number;
   audioPlayback: number;
   userPlay: boolean;
-  userColours: string[];
+  userColours: Colour[];
 };
 
 function App() {
@@ -34,8 +42,8 @@ function App() {
     simonMode: false,
     colours: [],
     score: 0,
-    speed: 800,
-    audioPlayback: 2,
+    speed: INITIAL_SPEED,
+    audioPlayback: AUDIO_PLAYBACK,
     userPlay: false,
     userColours: [],
   };
@@ -64,7 +72,7 @@ function App() {
 
   useEffect(() => {
     if (activeGame && gameState.simonMode) {
-      let randomColour = colours[getRandomInt(4)];
+      let randomColour = colours[getRandomInt(COLOURS_COUNT)];
       const coloursCopy = [...gameState.colours];
       coloursCopy.push(randomColour);
       setGameState({ ...gameState, colours: coloursCopy });
@@ -78,7 +86,7 @@ function App() {
   }, [activeGame, gameState.simonMode, gameState.colours.length]);
 
   async function lightUpColours() {
-    await timeout(1000);
+    await timeout(LIGHT_UP_DELAY);
     for (let index = 0; index < gameState.colours.length; index++) {
       setCurrentColour(gameState.colours[index]);
       playSound(gameState.colours[index]);
@@ -86,7 +94,7 @@ function App() {
       setCurrentColour("");
       await timeout(gameState.speed);
     }
-    const newGameSpeed = gameState.speed - 100 < 200 ? 200 : gameState.speed - 100;
+    const newGameSpeed = gameState.speed - SPEED_DECREMENT < MIN_SPEED ? MIN_SPEED : gameState.speed - SPEED_DECREMENT;
     setGameState({
       ...gameState,
       simonMode: false,
@@ -96,79 +104,82 @@ function App() {
     });
   }
 
-  async function gameButtonClickHandle(selectedColour: string) {
-    if (!gameState.simonMode && gameState.userPlay) {
-      const userColoursCopy = [...gameState.userColours];
-      const colour = userColoursCopy.shift();
-      setCurrentColour(selectedColour);
-      playSound(selectedColour);
+  const gameButtonClickHandle = useCallback(
+    async (selectedColour: Colour) => {
+      if (!gameState.simonMode && gameState.userPlay) {
+        const userColoursCopy = [...gameState.userColours];
+        const colour = userColoursCopy.shift();
+        setCurrentColour(selectedColour);
+        playSound(selectedColour);
 
-      if (selectedColour === colour) {
-        if (userColoursCopy.length) {
-          console.log("SHOW NEXT COLOUR");
-          setGameState({ ...gameState, userColours: userColoursCopy });
+        if (selectedColour === colour) {
+          if (userColoursCopy.length) {
+            setGameState({ ...gameState, userColours: userColoursCopy });
+          } else {
+            await timeout(TIMEOUT_DURATION);
+            setCurrentColour("");
+            setGameState({
+              ...gameState,
+              simonMode: true,
+              userPlay: false,
+              score: gameState.colours.length,
+              userColours: [],
+            });
+          }
         } else {
-          await timeout(200);
-          setCurrentColour("");
+          errorSound.play();
+          await timeout(ERROR_DELAY);
           setGameState({
-            ...gameState,
-            simonMode: true,
+            ...initialGameState,
+            simonMode: false,
             userPlay: false,
-            score: gameState.colours.length,
             userColours: [],
           });
-          console.log("ALL CORRECT SWITCH TO SIMON");
+          setActiveGame(false);
         }
-      } else {
-        errorSound.play();
-        await timeout(500);
-        setGameState({
-          ...initialGameState,
-          simonMode: false,
-          userPlay: false,
-          userColours: [],
-        });
-        setActiveGame(false);
+        await timeout(TIMEOUT_DURATION);
+        setCurrentColour("");
       }
-      await timeout(200);
-      setCurrentColour("");
-    }
-  }
+    },
+    [gameState]
+  );
 
-  function playSound(selectedColour: string) {
-    switch (selectedColour) {
-      case "green":
-        greenSound.playbackRate = gameState.audioPlayback;
-        greenSound.play();
-        break;
-      case "red":
-        redSound.playbackRate = gameState.audioPlayback;
-        redSound.play();
-        break;
-      case "yellow":
-        yellowSound.playbackRate = gameState.audioPlayback;
-        yellowSound.play();
-        break;
-      case "blue":
-        blueSound.playbackRate = gameState.audioPlayback;
-        blueSound.play();
-        break;
-    }
-  }
+  const playSound = useCallback(
+    (selectedColour: Colour) => {
+      switch (selectedColour) {
+        case "green":
+          greenSound.playbackRate = gameState.audioPlayback;
+          greenSound.play();
+          break;
+        case "red":
+          redSound.playbackRate = gameState.audioPlayback;
+          redSound.play();
+          break;
+        case "yellow":
+          yellowSound.playbackRate = gameState.audioPlayback;
+          yellowSound.play();
+          break;
+        case "blue":
+          blueSound.playbackRate = gameState.audioPlayback;
+          blueSound.play();
+          break;
+      }
+    },
+    [gameState.audioPlayback]
+  );
 
   return (
     <div className='simon circle oh bGray'>
       <div className='buttonsContainer pa circle oh'>
-        {colours &&
-          colours.map((colour) => (
-            <GameButton
-              colour={colour}
-              lightUp={currentColour === colour}
-              onClick={gameButtonClickHandle}
-              key={colour}
-              active={gameState.userPlay}
-            />
-          ))}
+        {colours.map((colour) => (
+          <GameButton
+            colour={colour}
+            lightUp={currentColour === colour}
+            onClick={gameButtonClickHandle}
+            key={colour}
+            active={gameState.userPlay}
+          />
+        ))}
         <div className='divider pa hoz bGray shadow10'></div>
         <div className='divider pa vert bGray shadow10'></div>
         <div className='divider pa hoz bGray z10'></div>
