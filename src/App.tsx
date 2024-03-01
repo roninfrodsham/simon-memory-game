@@ -104,69 +104,63 @@ function App() {
     });
   }
 
-  const gameButtonClickHandle = useCallback(
-    async (selectedColour: Colour) => {
-      if (!gameState.simonMode && gameState.userPlay) {
-        const userColoursCopy = [...gameState.userColours];
-        const colour = userColoursCopy.shift();
-        setCurrentColour(selectedColour);
-        playSound(selectedColour);
+  const gameButtonClickHandle = async (selectedColour: Colour) => {
+    if (!gameState.simonMode && gameState.userPlay) {
+      const userColoursCopy = [...gameState.userColours];
+      const colour = userColoursCopy.shift();
+      setCurrentColour(selectedColour);
+      playSound(selectedColour);
 
-        if (selectedColour === colour) {
-          if (userColoursCopy.length) {
-            setGameState({ ...gameState, userColours: userColoursCopy });
-          } else {
-            await timeout(TIMEOUT_DURATION);
-            setCurrentColour("");
-            setGameState({
-              ...gameState,
-              simonMode: true,
-              userPlay: false,
-              score: gameState.colours.length,
-              userColours: [],
-            });
-          }
+      if (selectedColour === colour) {
+        if (userColoursCopy.length) {
+          setGameState({ ...gameState, userColours: userColoursCopy });
         } else {
-          errorSound.play();
-          await timeout(ERROR_DELAY);
+          await timeout(TIMEOUT_DURATION);
+          setCurrentColour("");
           setGameState({
-            ...initialGameState,
-            simonMode: false,
+            ...gameState,
+            simonMode: true,
             userPlay: false,
+            score: gameState.colours.length,
             userColours: [],
           });
-          setActiveGame(false);
         }
-        await timeout(TIMEOUT_DURATION);
-        setCurrentColour("");
+      } else {
+        errorSound.play();
+        await timeout(ERROR_DELAY);
+        setGameState({
+          ...initialGameState,
+          simonMode: false,
+          userPlay: false,
+          userColours: [],
+        });
+        setActiveGame(false);
       }
-    },
-    [gameState]
-  );
+      await timeout(TIMEOUT_DURATION);
+      setCurrentColour("");
+    }
+  };
 
-  const playSound = useCallback(
-    (selectedColour: Colour) => {
-      switch (selectedColour) {
-        case "green":
-          greenSound.playbackRate = gameState.audioPlayback;
-          greenSound.play();
-          break;
-        case "red":
-          redSound.playbackRate = gameState.audioPlayback;
-          redSound.play();
-          break;
-        case "yellow":
-          yellowSound.playbackRate = gameState.audioPlayback;
-          yellowSound.play();
-          break;
-        case "blue":
-          blueSound.playbackRate = gameState.audioPlayback;
-          blueSound.play();
-          break;
-      }
-    },
-    [gameState.audioPlayback]
-  );
+  const playSound = (selectedColour: Colour) => {
+    switch (selectedColour) {
+      case "green":
+        greenSound.playbackRate = gameState.audioPlayback;
+        greenSound.play();
+        break;
+      case "red":
+        redSound.playbackRate = gameState.audioPlayback;
+        redSound.play();
+        break;
+      case "yellow":
+        yellowSound.playbackRate = gameState.audioPlayback;
+        yellowSound.play();
+        break;
+      case "blue":
+        blueSound.playbackRate = gameState.audioPlayback;
+        blueSound.play();
+        break;
+    }
+  };
 
   return (
     <div className='simon circle oh bGray'>
@@ -211,4 +205,4 @@ function App() {
   );
 }
 
-export default App;
+export { App };
