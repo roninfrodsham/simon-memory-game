@@ -26,6 +26,13 @@ const yellowSound = new Audio(yellowMp3);
 const blueSound = new Audio(blueMp3);
 const errorSound = new Audio(errorMp3);
 
+const soundMap = {
+  [Colour.GREEN]: greenSound,
+  [Colour.RED]: redSound,
+  [Colour.YELLOW]: yellowSound,
+  [Colour.BLUE]: blueSound,
+};
+
 const colours: Colour[] = [Colour.GREEN, Colour.RED, Colour.YELLOW, Colour.BLUE];
 
 const initialGameState: GameStateProps = {
@@ -35,7 +42,6 @@ const initialGameState: GameStateProps = {
   score: 0,
   speed: INITIAL_SPEED,
   audioPlayback: AUDIO_PLAYBACK,
-  userPlay: false,
   userColours: [],
 };
 
@@ -50,13 +56,13 @@ function gameReducer(state: GameStateProps, action: Action): GameStateProps {
       coloursCopy.push(action.payload);
       return { ...state, colours: coloursCopy };
     case ActionTypes.END_SIMON_MODE:
-      return { ...state, simonMode: false, userPlay: true, userColours: [...state.colours], speed: action.payload };
+      return { ...state, simonMode: false, userColours: [...state.colours], speed: action.payload };
     case ActionTypes.USER_INPUT:
       const userColoursCopy = [...state.userColours];
       const colour = userColoursCopy.shift();
       return { ...state, userColours: userColoursCopy };
     case ActionTypes.END_USER_MODE:
-      return { ...state, simonMode: true, userPlay: false, score: state.colours.length, userColours: [] };
+      return { ...state, simonMode: true, score: state.colours.length, userColours: [] };
     default:
       return state;
   }
@@ -109,7 +115,7 @@ function App() {
   }
 
   const gameButtonClickHandle = async (selectedColour: Colour) => {
-    if (!gameState.simonMode && gameState.userPlay) {
+    if (!gameState.simonMode && gameState.isGameActive) {
       const userColoursCopy = [...gameState.userColours];
       const colour = userColoursCopy.shift();
       setCurrentColour(selectedColour);
@@ -134,23 +140,10 @@ function App() {
   };
 
   const playSound = (selectedColour: Colour) => {
-    switch (selectedColour) {
-      case "green":
-        greenSound.playbackRate = gameState.audioPlayback;
-        greenSound.play();
-        break;
-      case "red":
-        redSound.playbackRate = gameState.audioPlayback;
-        redSound.play();
-        break;
-      case "yellow":
-        yellowSound.playbackRate = gameState.audioPlayback;
-        yellowSound.play();
-        break;
-      case "blue":
-        blueSound.playbackRate = gameState.audioPlayback;
-        blueSound.play();
-        break;
+    const sound = soundMap[selectedColour];
+    if (sound) {
+      sound.playbackRate = gameState.audioPlayback;
+      sound.play();
     }
   };
 
@@ -163,7 +156,7 @@ function App() {
             lightUp={currentColour === colour}
             onClick={gameButtonClickHandle}
             key={colour}
-            active={gameState.userPlay}
+            active={gameState.isGameActive}
           />
         ))}
         <div className='divider pa hoz bGray shadow10'></div>
