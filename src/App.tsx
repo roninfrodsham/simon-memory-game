@@ -1,9 +1,10 @@
-import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useReducer } from "react";
 import { GameButton, StartButton } from "./components";
 import { getRandomInt, timeout } from "./utils/misc";
-import { Colour } from "./types";
+import { Colour, ActionTypes, Action, GameStateProps } from "./types";
 import logo from "./logo.svg";
 import "./App.css";
+
 import greenMp3 from "./sounds/green.mp3";
 import redMp3 from "./sounds/red.mp3";
 import yellowMp3 from "./sounds/yellow.mp3";
@@ -26,64 +27,74 @@ const yellowSound = new Audio(yellowMp3);
 const blueSound = new Audio(blueMp3);
 const errorSound = new Audio(errorMp3);
 
-type GameStateProps = {
-  simonMode: boolean;
-  colours: Colour[];
-  score: number;
-  speed: number;
-  audioPlayback: number;
-  userPlay: boolean;
-  userColours: Colour[];
+const colours: Colour[] = [Colour.GREEN, Colour.RED, Colour.YELLOW, Colour.BLUE];
+
+const initialGameState: GameStateProps = {
+  isGameActive: false,
+  simonMode: false,
+  colours: [],
+  score: 0,
+  speed: INITIAL_SPEED,
+  audioPlayback: AUDIO_PLAYBACK,
+  userPlay: false,
+  userColours: [],
 };
 
-function App() {
-  const colours: Colour[] = [Colour.Green, Colour.Red, Colour.Yellow, Colour.Blue];
-  const initialGameState: GameStateProps = {
-    simonMode: false,
-    colours: [],
-    score: 0,
-    speed: INITIAL_SPEED,
-    audioPlayback: AUDIO_PLAYBACK,
-    userPlay: false,
-    userColours: [],
-  };
+function gameReducer(state: GameStateProps, action: Action): GameStateProps {
+  switch (action.type) {
+    case ActionTypes.START_GAME:
+      return { ...state, isGameActive: true, simonMode: true };
+    case ActionTypes.END_GAME:
+      return { ...initialGameState };
+    case ActionTypes.ADD_COLOUR:
+      const coloursCopy = [...state.colours];
+      coloursCopy.push(action.payload);
+      return { ...state, colours: coloursCopy };
+    case ActionTypes.END_SIMON_MODE:
+      return { ...state, simonMode: false, userPlay: true, userColours: [...state.colours], speed: action.payload };
+    case ActionTypes.USER_INPUT:
+      const userColoursCopy = [...state.userColours];
+      const colour = userColoursCopy.shift();
+      return { ...state, userColours: userColoursCopy };
+    case ActionTypes.END_USER_MODE:
+      return { ...state, simonMode: true, userPlay: false, score: state.colours.length, userColours: [] };
+    default:
+      return state;
+  }
+}
 
-  const [activeGame, setActiveGame] = useState<boolean>(false);
-  const [gameState, setGameState] = useState<GameStateProps>(initialGameState);
+function App() {
+  const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
   const [currentColour, setCurrentColour] = useState<string | null>(null);
 
-  function startGame() {
-    setActiveGame(true);
-  }
+  const startGame = () => {
+    dispatch({ type: ActionTypes.START_GAME });
+  };
 
   useLayoutEffect(() => {
-    window.addEventListener("contextmenu", function (e) {
+    const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-    });
+    };
+
+    window.addEventListener("contextmenu", handleContextMenu);
+
+    return () => {
+      window.removeEventListener("contextmenu", handleContextMenu);
+    };
   }, []);
 
   useEffect(() => {
-    if (activeGame) {
-      setGameState({ ...initialGameState, simonMode: true });
-    } else {
-      setGameState(initialGameState);
+    if (gameState.isGameActive && gameState.simonMode) {
+      console.log("Adding colour");
+      dispatch({ type: ActionTypes.ADD_COLOUR, payload: colours[getRandomInt(COLOURS_COUNT)] });
     }
-  }, [activeGame]);
+  }, [gameState.simonMode]);
 
   useEffect(() => {
-    if (activeGame && gameState.simonMode) {
-      let randomColour = colours[getRandomInt(COLOURS_COUNT)];
-      const coloursCopy = [...gameState.colours];
-      coloursCopy.push(randomColour);
-      setGameState({ ...gameState, colours: coloursCopy });
-    }
-  }, [activeGame, gameState.simonMode]);
-
-  useEffect(() => {
-    if (activeGame && gameState.simonMode && gameState.colours.length) {
+    if (gameState.isGameActive && gameState.simonMode && gameState.colours.length) {
       lightUpColours();
     }
-  }, [activeGame, gameState.simonMode, gameState.colours.length]);
+  }, [gameState.isGameActive, gameState.simonMode, gameState.colours.length]);
 
   async function lightUpColours() {
     await timeout(LIGHT_UP_DELAY);
@@ -95,13 +106,7 @@ function App() {
       await timeout(gameState.speed);
     }
     const newGameSpeed = gameState.speed - SPEED_DECREMENT < MIN_SPEED ? MIN_SPEED : gameState.speed - SPEED_DECREMENT;
-    setGameState({
-      ...gameState,
-      simonMode: false,
-      userPlay: true,
-      userColours: [...gameState.colours],
-      speed: newGameSpeed,
-    });
+    dispatch({ type: ActionTypes.END_SIMON_MODE, payload: newGameSpeed });
   }
 
   const gameButtonClickHandle = async (selectedColour: Colour) => {
@@ -113,28 +118,16 @@ function App() {
 
       if (selectedColour === colour) {
         if (userColoursCopy.length) {
-          setGameState({ ...gameState, userColours: userColoursCopy });
+          dispatch({ type: ActionTypes.USER_INPUT, payload: selectedColour });
         } else {
           await timeout(TIMEOUT_DURATION);
           setCurrentColour("");
-          setGameState({
-            ...gameState,
-            simonMode: true,
-            userPlay: false,
-            score: gameState.colours.length,
-            userColours: [],
-          });
+          dispatch({ type: ActionTypes.END_USER_MODE });
         }
       } else {
         errorSound.play();
         await timeout(ERROR_DELAY);
-        setGameState({
-          ...initialGameState,
-          simonMode: false,
-          userPlay: false,
-          userColours: [],
-        });
-        setActiveGame(false);
+        dispatch({ type: ActionTypes.END_GAME });
       }
       await timeout(TIMEOUT_DURATION);
       setCurrentColour("");
@@ -195,7 +188,7 @@ function App() {
                     <input type='text' value={gameState.score} disabled />
                   </div>
                 </div>
-                <StartButton onClick={startGame} activeGame={activeGame} />
+                <StartButton onClick={startGame} activeGame={gameState.isGameActive} />
               </div>
             </div>
           </div>
