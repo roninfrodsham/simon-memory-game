@@ -20,7 +20,6 @@ const TIMEOUT_DURATION = 200;
 const LIGHT_UP_DELAY = 1000;
 const ERROR_DELAY = 500;
 
-// switch these to use an oscillator!!!!
 const greenSound = new Audio(greenMp3);
 const redSound = new Audio(redMp3);
 const yellowSound = new Audio(yellowMp3);
