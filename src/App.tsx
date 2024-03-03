@@ -56,16 +56,16 @@ function App() {
   };
 
   useEffect(() => {
-    if (gameState.isGameActive && gameState.simonMode) {
+    if (gameState.simonMode) {
       dispatch({ type: ActionTypes.ADD_COLOUR, payload: colours[getRandomInt(COLOURS_COUNT)] });
     }
   }, [gameState.simonMode]);
 
   useEffect(() => {
-    if (gameState.isGameActive && gameState.simonMode && gameState.colours.length) {
+    if (gameState.isGameActive && gameState.colours.length) {
       lightUpColours();
     }
-  }, [gameState.isGameActive, gameState.simonMode, gameState.colours.length]);
+  }, [gameState.isGameActive, gameState.colours]);
 
   async function lightUpColours() {
     await timeout(LIGHT_UP_DELAY);
@@ -74,7 +74,7 @@ function App() {
       playSound(gameState.colours[index]);
       await timeout(gameState.speed);
       setCurrentColour("");
-      await timeout(gameState.speed);
+      await timeout(100);
     }
     const newGameSpeed = gameState.speed - SPEED_DECREMENT < MIN_SPEED ? MIN_SPEED : gameState.speed - SPEED_DECREMENT;
     dispatch({ type: ActionTypes.END_SIMON_MODE, payload: newGameSpeed });
@@ -83,17 +83,17 @@ function App() {
   const gameButtonClickHandle = async (selectedColour: Colour) => {
     if (!gameState.simonMode && gameState.isGameActive) {
       const colour = gameState.userColours[0];
-      const userColoursCopy = gameState.userColours.slice(1);
+
       setCurrentColour(selectedColour);
       playSound(selectedColour);
 
       if (selectedColour === colour) {
-        if (userColoursCopy.length) {
+        if (gameState.userColours.length > 1) {
           dispatch({ type: ActionTypes.USER_INPUT });
         } else {
+          dispatch({ type: ActionTypes.END_USER_MODE });
           await timeout(TIMEOUT_DURATION);
           setCurrentColour("");
-          dispatch({ type: ActionTypes.END_USER_MODE });
         }
       } else {
         errorSound.play();
