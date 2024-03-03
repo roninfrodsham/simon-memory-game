@@ -38,8 +38,8 @@ export enum ActionTypes {
  */
 export type Action =
   | { type: ActionTypes.START_GAME }
-  | { type: ActionTypes.END_GAME }
+  | { type: ActionTypes.END_GAME; payload: GameStateProps }
   | { type: ActionTypes.ADD_COLOUR; payload: Colour }
   | { type: ActionTypes.END_SIMON_MODE; payload: number }
-  | { type: ActionTypes.USER_INPUT; payload: Colour }
+  | { type: ActionTypes.USER_INPUT }
   | { type: ActionTypes.END_USER_MODE };

@@ -1,7 +1,18 @@
 import { useState, useEffect, useLayoutEffect, useReducer } from "react";
+import { gameReducer } from "./reducer/gameReducer";
 import { GameButton, StartButton } from "./components";
 import { getRandomInt, timeout } from "./utils/misc";
 import { Colour, ActionTypes, Action, GameStateProps } from "./types";
+import {
+  COLOURS_COUNT,
+  INITIAL_SPEED,
+  SPEED_DECREMENT,
+  MIN_SPEED,
+  AUDIO_PLAYBACK,
+  TIMEOUT_DURATION,
+  LIGHT_UP_DELAY,
+  ERROR_DELAY,
+} from "./constants";
 import logo from "./logo.svg";
 import "./App.css";
 
@@ -10,15 +21,6 @@ import redMp3 from "./sounds/red.mp3";
 import yellowMp3 from "./sounds/yellow.mp3";
 import blueMp3 from "./sounds/blue.mp3";
 import errorMp3 from "./sounds/error.mp3";
-
-const COLOURS_COUNT = 4;
-const INITIAL_SPEED = 800;
-const SPEED_DECREMENT = 100;
-const MIN_SPEED = 200;
-const AUDIO_PLAYBACK = 2;
-const TIMEOUT_DURATION = 200;
-const LIGHT_UP_DELAY = 1000;
-const ERROR_DELAY = 500;
 
 const greenSound = new Audio(greenMp3);
 const redSound = new Audio(redMp3);
@@ -45,29 +47,6 @@ const initialGameState: GameStateProps = {
   userColours: [],
 };
 
-function gameReducer(state: GameStateProps, action: Action): GameStateProps {
-  switch (action.type) {
-    case ActionTypes.START_GAME:
-      return { ...state, isGameActive: true, simonMode: true };
-    case ActionTypes.END_GAME:
-      return { ...initialGameState };
-    case ActionTypes.ADD_COLOUR:
-      const coloursCopy = [...state.colours];
-      coloursCopy.push(action.payload);
-      return { ...state, colours: coloursCopy };
-    case ActionTypes.END_SIMON_MODE:
-      return { ...state, simonMode: false, userColours: [...state.colours], speed: action.payload };
-    case ActionTypes.USER_INPUT:
-      const userColoursCopy = [...state.userColours];
-      const colour = userColoursCopy.shift();
-      return { ...state, userColours: userColoursCopy };
-    case ActionTypes.END_USER_MODE:
-      return { ...state, simonMode: true, score: state.colours.length, userColours: [] };
-    default:
-      return state;
-  }
-}
-
 function App() {
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
   const [currentColour, setCurrentColour] = useState<string | null>(null);
@@ -90,7 +69,6 @@ function App() {
 
   useEffect(() => {
     if (gameState.isGameActive && gameState.simonMode) {
-      console.log("Adding colour");
       dispatch({ type: ActionTypes.ADD_COLOUR, payload: colours[getRandomInt(COLOURS_COUNT)] });
     }
   }, [gameState.simonMode]);
@@ -123,7 +101,7 @@ function App() {
 
       if (selectedColour === colour) {
         if (userColoursCopy.length) {
-          dispatch({ type: ActionTypes.USER_INPUT, payload: selectedColour });
+          dispatch({ type: ActionTypes.USER_INPUT });
         } else {
           await timeout(TIMEOUT_DURATION);
           setCurrentColour("");
@@ -132,7 +110,7 @@ function App() {
       } else {
         errorSound.play();
         await timeout(ERROR_DELAY);
-        dispatch({ type: ActionTypes.END_GAME });
+        dispatch({ type: ActionTypes.END_GAME, payload: initialGameState });
       }
       await timeout(TIMEOUT_DURATION);
       setCurrentColour("");
