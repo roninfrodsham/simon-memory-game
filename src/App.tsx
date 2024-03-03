@@ -1,8 +1,8 @@
-import { useState, useEffect, useLayoutEffect, useReducer } from "react";
+import { useState, useEffect, useReducer } from "react";
 import { gameReducer } from "./reducer/gameReducer";
 import { GameButton, StartButton } from "./components";
 import { getRandomInt, timeout } from "./utils/misc";
-import { Colour, ActionTypes, Action, GameStateProps } from "./types";
+import { Colour, ActionTypes, GameStateProps } from "./types";
 import {
   COLOURS_COUNT,
   INITIAL_SPEED,
@@ -55,18 +55,6 @@ function App() {
     dispatch({ type: ActionTypes.START_GAME });
   };
 
-  useLayoutEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-    };
-
-    window.addEventListener("contextmenu", handleContextMenu);
-
-    return () => {
-      window.removeEventListener("contextmenu", handleContextMenu);
-    };
-  }, []);
-
   useEffect(() => {
     if (gameState.isGameActive && gameState.simonMode) {
       dispatch({ type: ActionTypes.ADD_COLOUR, payload: colours[getRandomInt(COLOURS_COUNT)] });
@@ -94,8 +82,8 @@ function App() {
 
   const gameButtonClickHandle = async (selectedColour: Colour) => {
     if (!gameState.simonMode && gameState.isGameActive) {
-      const userColoursCopy = [...gameState.userColours];
-      const colour = userColoursCopy.shift();
+      const colour = gameState.userColours[0];
+      const userColoursCopy = gameState.userColours.slice(1);
       setCurrentColour(selectedColour);
       playSound(selectedColour);
 
